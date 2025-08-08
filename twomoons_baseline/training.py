@@ -3,9 +3,9 @@ import torch
 from torch.optim import AdamW
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
+from diffusers import DDPMScheduler
 
 from .networks import ScoreNet
-from .sde_vp import VPSchedule
 from .data import make_two_moons
 
 
@@ -27,7 +27,15 @@ def train_baseline(
     net.train()
     opt = AdamW(net.parameters(), lr=lr)
 
-    schedule = VPSchedule()
+    # Use a standard DDPM scheduler (discrete-time) with linear betas
+    num_train_timesteps = 1000
+    scheduler = DDPMScheduler(
+        num_train_timesteps=num_train_timesteps,
+        beta_start=1e-4,
+        beta_end=2e-2,
+        beta_schedule="linear",
+        prediction_type="epsilon",
+    )
 
     step = 0
     pbar = tqdm(total=num_steps, desc="training", ncols=100)
@@ -35,24 +43,19 @@ def train_baseline(
         for (x0_batch,) in loader:
             x0 = x0_batch.to(device)
             b = x0.size(0)
-            t = torch.rand(b, device=device)  # U[0,1]
+            # Sample discrete diffusion steps
+            t_int = torch.randint(0, num_train_timesteps, (b,), device=device, dtype=torch.long)
+            # Noise to add and to predict
+            eps = torch.randn_like(x0)
+            # Forward diffusion using the scheduler
+            xt = scheduler.add_noise(x0, eps, t_int)
 
-            alpha_t = schedule.alpha(t)
-            sigma_t = schedule.sigma(t)
+            # Model predicts epsilon; feed normalized time in [0,1] to the time embedding
+            t_norm = t_int.float() / float(num_train_timesteps - 1)
+            eps_pred = net(xt, t_norm)
 
-            z = torch.randn_like(x0)
-            xt = alpha_t.view(-1, 1) * x0 + sigma_t.view(-1, 1) * z
-
-            # Target score: grad_x log p(xt|x0) = (mu - x)/sigma^2
-            sigma2_t = (sigma_t * sigma_t).view(-1, 1)
-            target_score = (alpha_t.view(-1, 1) * x0 - xt) / (sigma2_t + 1e-12)
-
-            pred = net(xt, t)
-
-            # Weighting lambda(t) = g(t)^2. For VP-SDE, g(t)^2 = beta(t)
-            beta_t = schedule.beta(t).view(-1, 1)
-            weight = beta_t
-            loss = (weight * (pred - target_score) ** 2).mean()
+            # Epsilon objective (no extra weighting)
+            loss = torch.mean((eps_pred - eps) ** 2)
 
             opt.zero_grad(set_to_none=True)
             loss.backward()

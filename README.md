@@ -6,8 +6,8 @@ This repository contains a minimal test bed for diffusion models on 2D data. The
 
 ### Model
 - **Score network**: `ScoreNet` is a small MLP conditioned on time via sinusoidal embeddings (`diffusers` `Timesteps` + `TimestepEmbedding`).
-- **SDE schedule**: Variance-preserving (VP) schedule with linearly increasing `beta(t)`; closed-form `alpha(t)` and `sigma(t)` are used for perturbations during training.
-- **Loss**: Weighted denoising score matching. Given noised samples `x_t`, the target score is `(alpha(t) * x0 - x_t) / sigma(t)^2` and the MSE is weighted by `beta(t)`.
+- **Scheduler (training)**: Discrete DDPM scheduler (`DDPMScheduler`, linear betas, 1000 steps). Training uses the standard ε-prediction objective: the model predicts the added noise and minimizes MSE(ε̂, ε).
+- **Sampling (Euler)**: Inference integrates the reverse VP dynamics with Euler–Maruyama. We convert ε̂ → score using `alphas_cumprod` from the DDPM scheduler and approximate β(t) from the discrete schedule.
 
 ### Training
 - Dataset: `sklearn` two moons (50k points).
@@ -16,7 +16,7 @@ This repository contains a minimal test bed for diffusion models on 2D data. The
 - A checkpoint is saved to `artifacts/checkpoints/baseline.pt`.
 
 ### Sampling (Euler)
-Starting from `N(0, I)`, we integrate the reverse VP-SDE from `t=1 → 0` with Euler–Maruyama using the learned score. Defaults: `--sample-steps 1000` producing `--num-samples 5000` points.
+Starting from `N(0, I)`, we integrate from `t=1 → 0` using Euler–Maruyama on the reverse SDE. The drift uses the score derived from the model’s ε prediction; β(t) and σ(t) are computed from the DDPM schedule. Defaults: `--sample-steps 1000`, `--num-samples 5000`.
 
 ### Evaluation metrics
 For quantitative validation against the target two-moons samples, the pipeline reports:
