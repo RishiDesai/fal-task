@@ -12,7 +12,7 @@ from twomoons_baseline.metrics import (
     compute_sliced_wasserstein,
 )
 from twomoons_baseline.data import make_two_moons
-from twomoons_baseline.viz import plot_generated_vs_target
+from twomoons_baseline.viz import plot_generated_vs_target, plot_generated_only
 from twomoons_baseline.utils import set_seed, to_device
 from twomoons_baseline.networks import ScoreNet
 
@@ -28,15 +28,18 @@ def ensure_dirs():
         d.mkdir(parents=True, exist_ok=True)
 
 
-def _load_model_from_ckpt(ckpt_path: Path, device: torch.device) -> torch.nn.Module:
+def _load_model_from_ckpt(ckpt_path: Path, device: torch.device, prefer_ema: bool = True) -> torch.nn.Module:
     # Try to load as a safe state_dict checkpoint
     try:
         ckpt = torch.load(str(ckpt_path), map_location=device)
         if isinstance(ckpt, dict) and "state_dict" in ckpt:
             config = ckpt.get("config", {"input_dim": 2, "hidden_dim": 128, "time_embed_dim": 64})
             model = ScoreNet(**config).to(device)
-            # Prefer EMA weights if available
-            state = ckpt.get("ema_state_dict", ckpt["state_dict"]) 
+            # Optionally prefer EMA weights if available
+            if prefer_ema and "ema_state_dict" in ckpt:
+                state = ckpt["ema_state_dict"]
+            else:
+                state = ckpt["state_dict"]
             model.load_state_dict(state)
             return model
     except Exception:
@@ -66,10 +69,12 @@ def run_baseline(args):
             lr=args.lr,
             device=device,
             log_every=args.log_every,
+            use_ema=args.train_use_ema,
+            ema_decay=args.ema_decay,
         )
 
     # Load model
-    model = _load_model_from_ckpt(ckpt_path, device)
+    model = _load_model_from_ckpt(ckpt_path, device, prefer_ema=args.sample_use_ema)
     model.eval()
 
     # Sample (Euler sampler)
@@ -98,6 +103,11 @@ def run_baseline(args):
     plot_generated_vs_target(samples.cpu().numpy(), target.cpu().numpy(), str(fig_path))
     print(f"Saved plot to {fig_path}")
 
+    # Save generated-only plot as well
+    gen_only_path = PLOTS_DIR / "baseline_two_moons_generated.png"
+    plot_generated_only(samples.cpu().numpy(), str(gen_only_path), title="Generated (EMA if available)")
+    print(f"Saved generated-only plot to {gen_only_path}")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Two Moons Diffusion Baseline")
@@ -106,6 +116,10 @@ def main():
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--log-every", type=int, default=250)
     parser.add_argument("--sample-steps", type=int, default=1000)
+    # EMA controls
+    parser.add_argument("--train-use-ema", action="store_true", help="Track EMA during training and save EMA weights")
+    parser.add_argument("--sample-use-ema", action="store_true", help="Use EMA weights for sampling if available")
+    parser.add_argument("--ema-decay", type=float, default=0.999, help="EMA decay for training updates")
     parser.add_argument("--skip-train", action="store_true", help="Skip training and only sample/evaluate using existing checkpoint")
     parser.add_argument("--num-samples", type=int, default=5000)
     parser.add_argument("--seed", type=int, default=42)

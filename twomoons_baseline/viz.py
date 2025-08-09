@@ -21,3 +21,14 @@ def plot_generated_vs_target(gen: np.ndarray, target: np.ndarray, save_path: str
     fig.tight_layout()
     fig.savefig(save_path, dpi=200)
     plt.close(fig)
+
+
+def plot_generated_only(gen: np.ndarray, save_path: str, title: str = "Generated"):
+    fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+    ax.scatter(gen[:, 0], gen[:, 1], s=4, alpha=0.6, c="#ff7f0e")
+    ax.set_title(title)
+    ax.set_aspect("equal", adjustable="box")
+    ax.grid(True, linestyle=":", linewidth=0.5, alpha=0.5)
+    fig.tight_layout()
+    fig.savefig(save_path, dpi=200)
+    plt.close(fig)

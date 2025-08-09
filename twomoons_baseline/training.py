@@ -4,6 +4,7 @@ from torch.optim import AdamW
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 from diffusers import DDPMScheduler
+import torch.nn.functional as F
 
 from .networks import ScoreNet
 from .data import make_two_moons
@@ -17,6 +18,8 @@ def train_baseline(
     device: torch.device = torch.device("cpu"),
     log_every: int = 250,
     grad_clip: float = 1.0,
+    ema_decay: float = 0.999,
+    use_ema: bool = False,
 ):
     X, _ = make_two_moons(n_samples=50000)
     X = torch.tensor(X, dtype=torch.float32)
@@ -25,17 +28,27 @@ def train_baseline(
 
     net = ScoreNet().to(device)
     net.train()
+    # Maintain EMA of parameters using diffusers' EMAModel when requested
+    ema = None
+    if use_ema:
+        try:
+            from diffusers.training_utils import EMAModel  # lazy import to avoid JAX/Flax when unused
+        except Exception as exc:
+            raise RuntimeError(
+                "Failed to import EMAModel from diffusers. Install compatible diffusers or disable EMA (use_ema=False)."
+            ) from exc
+        ema = EMAModel(net.parameters(), decay=ema_decay)
     opt = AdamW(net.parameters(), lr=lr)
 
     # Use a standard DDPM scheduler (discrete-time) with linear betas
-    num_train_timesteps = 1000
     scheduler = DDPMScheduler(
-        num_train_timesteps=num_train_timesteps,
+        num_train_timesteps=1000,
         beta_start=1e-4,
         beta_end=2e-2,
         beta_schedule="linear",
         prediction_type="epsilon",
     )
+    num_train_timesteps = scheduler.config.num_train_timesteps
 
     step = 0
     pbar = tqdm(total=num_steps, desc="training", ncols=100)
@@ -55,13 +68,17 @@ def train_baseline(
             eps_pred = net(xt, t_norm)
 
             # Epsilon objective (no extra weighting)
-            loss = torch.mean((eps_pred - eps) ** 2)
+            loss = F.mse_loss(eps_pred, eps)
 
             opt.zero_grad(set_to_none=True)
             loss.backward()
             if grad_clip is not None and grad_clip > 0:
                 torch.nn.utils.clip_grad_norm_(net.parameters(), grad_clip)
             opt.step()
+
+            # EMA parameter update via diffusers' EMAModel
+            if ema is not None:
+                ema.step(net.parameters())
 
             step += 1
             if step % log_every == 0:
@@ -77,4 +94,9 @@ def train_baseline(
         "state_dict": net.state_dict(),
         "config": {"input_dim": 2, "hidden_dim": 128, "time_embed_dim": 64},
     }
+    if ema is not None:
+        # Save EMA weights as a model state_dict for compatibility with the loader
+        ema_model = ScoreNet().to(device)
+        ema.copy_to(ema_model.parameters())
+        ckpt["ema_state_dict"] = ema_model.state_dict()
     torch.save(ckpt, ckpt_path)
