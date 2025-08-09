@@ -46,9 +46,10 @@ Key outputs:
 
 - **Metrics** (lower is better):
 
-  | Setting  | MMD (RBF) | Energy Distance | Sliced Wasserstein-1 (L=256) |
-  |----------|-----------|-----------------|-------------------------------|
-  | Baseline | 0.043403  | 0.059351        | 0.053859                      |
+  | Setting          | MMD (RBF) | Energy Distance | Sliced Wasserstein-1 (L=256) |
+  |------------------|-----------|-----------------|-------------------------------|
+  | EulerDiscrete    | 0.043403  | 0.059351        | 0.053859                      |
+  | DDPM (this repo) | 0.036139  | 0.051655        | 0.043603                      |
 
 - **Artifacts**:
   - Comparison plot: `artifacts/plots/baseline_two_moons.png`
@@ -60,3 +61,13 @@ Key outputs:
   - Add `--train-use-ema` to enable EMA tracking during training (decay via `--ema-decay`, default `0.999`).
   - Add `--sample-use-ema` to prefer EMA weights when loading for sampling.
 - **Note**: EMA typically improves sample quality and distance metrics; exact numbers may vary.
+
+#### Example (40k steps, EMA for training and sampling)
+- **Command**:
+  ```bash
+  python main.py --run --train-steps 40000 --batch-size 512 --lr 1e-3 --log-every 500 --sample-steps 1000 --num-samples 5000 --seed 42 --train-use-ema --sample-use-ema
+  ```
+- **Metrics** (lower is better):
+  - MMD (RBF median heuristic): `0.000000`
+  - Energy Distance: `0.020453`
+  - Sliced Wasserstein-1 (L=256): `0.016328`

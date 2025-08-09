@@ -1,5 +1,5 @@
 import torch
-from diffusers import EulerDiscreteScheduler
+from diffusers import DDPMScheduler
 
 
 @torch.no_grad()
@@ -9,18 +9,24 @@ def sample_with_euler(
     num_steps: int = 1000,
     device: torch.device = torch.device("cpu"),
 ):
-    """Sampling with diffusers' EulerDiscreteScheduler (epsilon prediction).
+    """Sampling with DDPM scheduler to match training (epsilon prediction).
 
-    - Matches training schedule (DDPM linear betas, 1000 steps)
-    - Uses scheduler.scale_model_input as required by EulerDiscrete
+    - Uses the same linear beta schedule as training
+    - Keeps the original function name for backward compatibility
     """
-    scheduler = EulerDiscreteScheduler()
+    scheduler = DDPMScheduler(
+        num_train_timesteps=1000,
+        beta_start=1e-4,
+        beta_end=2e-2,
+        beta_schedule="linear",
+        prediction_type="epsilon",
+        clip_sample=False,
+    )
 
     scheduler.set_timesteps(num_steps, device=device)
     T = float(scheduler.config.num_train_timesteps - 1)
 
     x = torch.randn(num_samples, 2, device=device, dtype=torch.float32)
-    # Scale initial noise to scheduler's init sigma for correct trajectory
     if hasattr(scheduler, "init_noise_sigma"):
         x = x * scheduler.init_noise_sigma
 
@@ -29,7 +35,6 @@ def sample_with_euler(
         t_norm_scalar = float(t.item()) / T
         t_norm = torch.full((num_samples,), t_norm_scalar, device=device, dtype=x.dtype)
 
-        # Proper usage for EulerDiscreteScheduler
         x_in = scheduler.scale_model_input(x, t)
         eps_pred = model(x_in, t_norm)
 
