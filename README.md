@@ -6,8 +6,8 @@ This repository contains a minimal test bed for diffusion models on 2D data. The
 
 ### Model
 - **Score network**: `ScoreNet` is a small MLP conditioned on time via sinusoidal embeddings (`diffusers` `Timesteps` + `TimestepEmbedding`).
-- **Scheduler (training)**: Discrete DDPM scheduler (`DDPMScheduler`, linear betas, 1000 steps). Training uses the standard ε-prediction objective: the model predicts the added noise and minimizes MSE(ε̂, ε).
-- **Sampling (EulerDiscrete)**: Inference uses Diffusers' `EulerDiscreteScheduler` with ε-prediction. The input is scaled via `scheduler.scale_model_input`, and the scheduler performs the reverse update consistent with the discrete DDPM training schedule.
+- **Scheduler (training)**: Discrete DDPM scheduler (`DDPMScheduler`, cosine betas `squaredcos_cap_v2`, 1000 steps). Training uses the standard ε-prediction objective: the model predicts the added noise and minimizes MSE(ε̂, ε).
+- **Sampling**: Uses the same `DDPMScheduler` with cosine betas to match training. Inputs are scaled with `scheduler.scale_model_input`, and updates follow the discrete DDPM schedule.
 
 ### Training
 - Dataset: `sklearn` two moons (50k points).
@@ -15,8 +15,8 @@ This repository contains a minimal test bed for diffusion models on 2D data. The
 - Defaults: `--train-steps 5000`, batch size 512.
 - A checkpoint is saved to `artifacts/checkpoints/baseline.pt`.
 
-### Sampling (EulerDiscrete)
-Starting from `N(0, I)`, we run Diffusers' `EulerDiscreteScheduler` from `t=1 → 0` using ε-prediction. Inputs are scaled with `scheduler.scale_model_input`, and updates follow the discrete DDPM schedule. Defaults: `--sample-steps 1000`, `--num-samples 5000`.
+### Sampling
+Starting from `N(0, I)`, we run Diffusers' `DDPMScheduler` (cosine betas) from `t=1 → 0` using ε-prediction. Inputs are scaled with `scheduler.scale_model_input`, and updates follow the discrete DDPM schedule. Defaults: `--sample-steps 1000`, `--num-samples 5000`.
 
 ### Evaluation metrics
 For quantitative validation against the target two-moons samples, the pipeline reports:
@@ -71,3 +71,15 @@ Key outputs:
   - MMD (RBF median heuristic): `0.000000`
   - Energy Distance: `0.020453`
   - Sliced Wasserstein-1 (L=256): `0.016328`
+
+#### Cosine beta schedule (40k steps, EMA)
+- **Command**:
+  ```bash
+  python main.py --run --train-steps 40000 --batch-size 512 --lr 1e-3 --log-every 500 --sample-steps 1000 --num-samples 5000 --seed 42 --train-use-ema --sample-use-ema
+  ```
+- **Metrics** (lower is better):
+  - MMD (RBF median heuristic): `0.000000`
+  - Energy Distance: `0.019954`
+  - Sliced Wasserstein-1 (L=256): `0.015846`
+  
+Using `DDPMScheduler` with cosine betas (`squaredcos_cap_v2`) for both training and sampling.

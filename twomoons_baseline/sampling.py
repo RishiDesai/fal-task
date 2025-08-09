@@ -18,7 +18,7 @@ def sample_with_euler(
         num_train_timesteps=1000,
         beta_start=1e-4,
         beta_end=2e-2,
-        beta_schedule="linear",
+        beta_schedule="squaredcos_cap_v2",
         prediction_type="epsilon",
         clip_sample=False,
     )

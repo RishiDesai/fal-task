@@ -45,7 +45,7 @@ def train_baseline(
         num_train_timesteps=1000,
         beta_start=1e-4,
         beta_end=2e-2,
-        beta_schedule="linear",
+        beta_schedule="squaredcos_cap_v2",
         prediction_type="epsilon",
     )
     num_train_timesteps = scheduler.config.num_train_timesteps
