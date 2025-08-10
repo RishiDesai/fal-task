@@ -44,12 +44,14 @@ Key outputs:
   python main.py --run --train-steps 40000 --batch-size 512 --lr 1e-3 --log-every 500 --sample-steps 1000 --num-samples 5000 --seed 42
   ```
 
-- **Metrics** (lower is better):
+- **Consolidated metrics** (lower is better):
 
-  | Setting          | MMD (RBF) | Energy Distance | Sliced Wasserstein-1 (L=256) |
-  |------------------|-----------|-----------------|-------------------------------|
-  | EulerDiscrete    | 0.043403  | 0.059351        | 0.053859                      |
-  | DDPM (this repo) | 0.036139  | 0.051655        | 0.043603                      |
+  | Setting                               | EMA | MMD (RBF) | Energy Distance | Sliced Wasserstein-1 (L=256) |
+  |---------------------------------------|-----|-----------|-----------------|-------------------------------|
+  | EulerDiscrete                          | No  | 0.043403  | 0.059351        | 0.053859                      |
+  | DDPM (this repo)                       | No  | 0.036139  | 0.051655        | 0.043603                      |
+  | DDPM + EMA (40k steps)                 | Yes | 0.000000  | 0.020453        | 0.016328                      |
+  | DDPM + EMA + Cosine betas (40k steps)  | Yes | 0.000000  | 0.019954        | 0.015846                      |
 
 - **Artifacts**:
   - Comparison plot: `artifacts/plots/baseline_two_moons.png`
@@ -67,19 +69,13 @@ Key outputs:
   ```bash
   python main.py --run --train-steps 40000 --batch-size 512 --lr 1e-3 --log-every 500 --sample-steps 1000 --num-samples 5000 --seed 42 --train-use-ema --sample-use-ema
   ```
-- **Metrics** (lower is better):
-  - MMD (RBF median heuristic): `0.000000`
-  - Energy Distance: `0.020453`
-  - Sliced Wasserstein-1 (L=256): `0.016328`
+- See consolidated metrics table above.
 
 #### Cosine beta schedule (40k steps, EMA)
 - **Command**:
   ```bash
   python main.py --run --train-steps 40000 --batch-size 512 --lr 1e-3 --log-every 500 --sample-steps 1000 --num-samples 5000 --seed 42 --train-use-ema --sample-use-ema
   ```
-- **Metrics** (lower is better):
-  - MMD (RBF median heuristic): `0.000000`
-  - Energy Distance: `0.019954`
-  - Sliced Wasserstein-1 (L=256): `0.015846`
+- See consolidated metrics table above.
   
 Using `DDPMScheduler` with cosine betas (`squaredcos_cap_v2`) for both training and sampling.

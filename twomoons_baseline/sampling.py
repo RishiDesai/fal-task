@@ -27,8 +27,8 @@ def sample_with_euler(
     T = float(scheduler.config.num_train_timesteps - 1)
 
     x = torch.randn(num_samples, 2, device=device, dtype=torch.float32)
-    if hasattr(scheduler, "init_noise_sigma"):
-        x = x * scheduler.init_noise_sigma
+    # if hasattr(scheduler, "init_noise_sigma"):
+    #     x = x * scheduler.init_noise_sigma
 
     for t in scheduler.timesteps:
         # Normalize discrete timestep for our time embedding

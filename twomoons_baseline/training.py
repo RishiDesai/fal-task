@@ -65,7 +65,9 @@ def train_baseline(
 
             # Model predicts epsilon; feed normalized time in [0,1] to the time embedding
             t_norm = t_int.float() / float(num_train_timesteps - 1)
-            eps_pred = net(xt, t_norm)
+            # Match sampling behavior by scaling model input with the scheduler
+            x_in = scheduler.scale_model_input(xt, t_int)
+            eps_pred = net(x_in, t_norm)
 
             # Epsilon objective (no extra weighting)
             loss = F.mse_loss(eps_pred, eps)
