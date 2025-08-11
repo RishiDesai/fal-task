@@ -29,6 +29,8 @@ class ScoreNet(nn.Module):
             nn.SiLU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.SiLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.SiLU(),
             nn.Linear(hidden_dim, input_dim),
         )
         # Initialize last layer to near-zero to stabilize early training
