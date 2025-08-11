@@ -57,6 +57,18 @@ Key outputs:
   - Comparison plot: `artifacts/plots/baseline_two_moons.png`
   - Generated-only plot: `artifacts/plots/baseline_two_moons_generated.png`
 
+### Larger MLP experiment
+
+- **Description**: Same setup as baseline, but with a larger MLP in `ScoreNet`.
+- **Metrics** (lower is better):
+
+  | Setting        | MMD (RBF) | Energy Distance | Sliced Wasserstein-1 (L=256) |
+  |----------------|-----------|-----------------|-------------------------------|
+  | Larger MLP     | 0.000000  | 0.017666        | 0.014260                      |
+
+- **Artifact**:
+  - Generated-only plot: `artifacts/plots/baseline_two_moons_generated_largerMLP.png`
+
 ### EMA (optional)
 - **What it does**: Tracks an exponential moving average (EMA) of weights during training and optionally uses EMA weights for sampling.
 - **How to enable**:
