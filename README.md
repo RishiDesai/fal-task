@@ -6,6 +6,8 @@ A minimal test bed for diffusion models on 2D data. Trains a score network on th
 
 ![Two Moons (target vs generated)](artifacts/plots/two_moons_final.png)
 
+See the full write-up: [Write-up](fal_writeup.pdf).
+
 ### Setup
 
 ```bash
