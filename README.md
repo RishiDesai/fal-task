@@ -4,6 +4,10 @@
 
 A minimal test bed for diffusion models on 2D data. Trains a score network on the "Two Moons" dataset and samples using a discrete DDPM scheduler.
 
+### Final plot
+
+![Two Moons (target vs generated)](artifacts/plots/two_moons_final.png)
+
 ### Installation (uv)
 
 ```bash
