@@ -1,4 +1,3 @@
-from typing import Optional
 import torch
 import torch.nn as nn
 from diffusers.models.embeddings import Timesteps, TimestepEmbedding

@@ -12,9 +12,7 @@ from twomoons_baseline.metrics import (
     compute_sliced_wasserstein,
     compute_c2st_auc,
 )
-from twomoons_baseline.data import make_two_moons
-from twomoons_baseline.viz import plot_generated_vs_target, plot_generated_only
-from twomoons_baseline.utils import set_seed, to_device
+from twomoons_baseline.utils import set_seed, to_device, plot_generated_vs_target, plot_generated_only, make_two_moons
 from twomoons_baseline.networks import ScoreNet
 
 

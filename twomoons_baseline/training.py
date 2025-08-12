@@ -4,10 +4,11 @@ from torch.optim import AdamW
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 from diffusers import DDPMScheduler
+from diffusers.training_utils import EMAModel
 import torch.nn.functional as F
 
 from .networks import ScoreNet
-from .data import make_two_moons
+from .utils import make_two_moons
 
 
 def train_baseline(
@@ -31,12 +32,6 @@ def train_baseline(
     # Maintain EMA of parameters using diffusers' EMAModel when requested
     ema = None
     if use_ema:
-        try:
-            from diffusers.training_utils import EMAModel  # lazy import to avoid JAX/Flax when unused
-        except Exception as exc:
-            raise RuntimeError(
-                "Failed to import EMAModel from diffusers. Install compatible diffusers or disable EMA (use_ema=False)."
-            ) from exc
         ema = EMAModel(net.parameters(), decay=ema_decay)
     opt = AdamW(net.parameters(), lr=lr)
 

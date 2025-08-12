@@ -1,7 +1,11 @@
-from typing import Optional
-
 import torch
-
+import numpy as np
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.metrics import roc_auc_score, accuracy_score
 
 def _rbf_kernel(x: torch.Tensor, y: torch.Tensor, gamma: float) -> torch.Tensor:
     # x: (n, d), y: (m, d)
@@ -124,19 +128,6 @@ def compute_c2st_auc(
     Returns:
         (roc_auc_mean: float, acc_mean: float)
     """
-    try:
-        import numpy as np
-        from sklearn.model_selection import RepeatedStratifiedKFold
-        from sklearn.pipeline import make_pipeline
-        from sklearn.preprocessing import StandardScaler
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.svm import SVC
-        from sklearn.metrics import roc_auc_score, accuracy_score
-    except Exception as exc:
-        raise RuntimeError(
-            "C2ST requires scikit-learn and numpy. Please install requirements.txt."
-        ) from exc
-
     # Ensure CPU numpy arrays for sklearn
     real_np = real.detach().cpu().numpy()
     gen_np = gen.detach().cpu().numpy()
