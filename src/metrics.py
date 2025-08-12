@@ -181,4 +181,6 @@ def compute_c2st_auc(
         pred = clf.predict(X_te)
         accs.append(accuracy_score(y_te, pred))
 
-    return float(np.mean(aucs)), float(np.mean(accs))
+    # rescale AUC to be 0-1, lower is better
+    sep_auc = float(np.mean([2*abs(a-0.5) for a in aucs]))
+    return sep_auc, float(np.mean(accs))

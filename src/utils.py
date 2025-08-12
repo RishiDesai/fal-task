@@ -34,7 +34,7 @@ def plot_generated_vs_target(gen: np.ndarray, target: np.ndarray, save_path: str
     axes[0].set_aspect("equal", adjustable="box")
 
     axes[1].scatter(gen[:, 0], gen[:, 1], s=4, alpha=0.6, c="#ff7f0e")
-    axes[1].set_title("Generated (baseline)")
+    axes[1].set_title("Generated points")
     axes[1].set_aspect("equal", adjustable="box")
 
     for ax in axes:
@@ -45,7 +45,7 @@ def plot_generated_vs_target(gen: np.ndarray, target: np.ndarray, save_path: str
     plt.close(fig)
 
 
-def plot_generated_only(gen: np.ndarray, save_path: str, title: str = "Generated"):
+def plot_generated_only(gen: np.ndarray, save_path: str, title: str = "Generated Points"):
     fig, ax = plt.subplots(1, 1, figsize=(5, 4))
     ax.scatter(gen[:, 0], gen[:, 1], s=4, alpha=0.6, c="#ff7f0e")
     ax.set_title(title)

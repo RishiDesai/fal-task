@@ -95,22 +95,22 @@ def run_baseline(args):
     print(f"MMD (RBF median heuristic): {mmd.item():.6f}")
     print(f"Energy Distance: {ed.item():.6f}")
     print(f"Sliced Wasserstein-1 (L=256): {sw.item():.6f}")
-    print(f"C2ST (logreg) ROC-AUC: {auc:.4f}  Acc: {acc:.4f}  (0.5/0.5 is ideal)")
+    print(f"C2ST ROC-AUC: {auc:.4f}  Acc: {acc:.4f}")
 
     # Plot
-    fig_path = PLOTS_DIR / "baseline_two_moons.png"
+    fig_path = PLOTS_DIR / "two_moons.png"
     plot_generated_vs_target(samples.cpu().numpy(), target.cpu().numpy(), str(fig_path))
     print(f"Saved plot to {fig_path}")
 
     # Save generated-only plot as well
-    gen_only_path = PLOTS_DIR / "baseline_two_moons_generated.png"
-    plot_generated_only(samples.cpu().numpy(), str(gen_only_path), title="Generated (EMA if available)")
+    gen_only_path = PLOTS_DIR / "two_moons_generated.png"
+    plot_generated_only(samples.cpu().numpy(), str(gen_only_path))
     print(f"Saved generated-only plot to {gen_only_path}")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Two Moons Diffusion Baseline")
-    parser.add_argument("--train-steps", type=int, default=5000)
+    parser.add_argument("--train-steps", type=int, default=40000)
     parser.add_argument("--batch-size", type=int, default=512)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--log-every", type=int, default=250)

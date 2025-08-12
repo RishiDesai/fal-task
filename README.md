@@ -40,5 +40,5 @@ python main.py --run --train-steps 40000 --batch-size 512 --lr 1e-3 --log-every 
 - Checkpoint: `artifacts/checkpoints/baseline.pt`
 - Samples (tensor): `artifacts/outputs/samples.pt`
 - Plots:
-  - `artifacts/plots/baseline_two_moons.png` (generated vs target)
-  - `artifacts/plots/baseline_two_moons_generated.png` (generated only)
+  - `artifacts/plots/two_moons.png` (generated vs target)
+  - `artifacts/plots/two_moons_generated.png` (generated only)
