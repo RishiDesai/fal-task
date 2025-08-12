@@ -4,16 +4,16 @@ from pathlib import Path
 
 import torch
 
-from twomoons_baseline.training import train_baseline
-from twomoons_baseline.sampling import sample_with_euler
-from twomoons_baseline.metrics import (
+from src.training import train_baseline
+from src.sampling import sample_with_euler
+from src.metrics import (
     compute_mmd_rbf,
     compute_energy_distance,
     compute_sliced_wasserstein,
     compute_c2st_auc,
 )
-from twomoons_baseline.utils import set_seed, to_device, plot_generated_vs_target, plot_generated_only, make_two_moons
-from twomoons_baseline.networks import ScoreNet
+from src.utils import set_seed, to_device, plot_generated_vs_target, plot_generated_only, make_two_moons
+from src.networks import ScoreNet
 
 
 ARTIFACTS_DIR = Path("artifacts")
