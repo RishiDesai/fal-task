@@ -19,24 +19,74 @@ class SinusoidalTimeEmbedding(nn.Module):
         return self.time_mlp(t_proj)
 
 
-class ScoreNet(nn.Module):
-    def __init__(self, input_dim: int = 2, hidden_dim: int = 128, time_embed_dim: int = 64):
+class ResidualMLPBlock(nn.Module):
+    """Residual MLP block with LayerNorm and time embedding injection.
+
+    Each block applies two linear layers with SiLU activations and pre-norm.
+    The time embedding is projected to the hidden size and added as a bias.
+    """
+
+    def __init__(self, hidden_dim: int, time_embed_dim: int, dropout: float = 0.0):
         super().__init__()
+        self.norm1 = nn.LayerNorm(hidden_dim)
+        self.act1 = nn.SiLU()
+        self.fc1 = nn.Linear(hidden_dim, hidden_dim)
+
+        self.norm2 = nn.LayerNorm(hidden_dim)
+        self.act2 = nn.SiLU()
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+
+        self.time_proj = nn.Linear(time_embed_dim, hidden_dim)
+        self.dropout = nn.Dropout(dropout) if dropout and dropout > 0 else nn.Identity()
+
+        # Zero-init the last layer to encourage identity at start
+        nn.init.zeros_(self.fc2.weight)
+        nn.init.zeros_(self.fc2.bias)
+
+    def forward(self, h: torch.Tensor, t_emb: torch.Tensor) -> torch.Tensor:
+        temb = self.time_proj(t_emb)
+
+        y = self.norm1(h)
+        y = y + temb
+        y = self.act1(y)
+        y = self.fc1(y)
+        y = self.dropout(y)
+
+        y = self.norm2(y)
+        y = self.act2(y)
+        y = self.fc2(y)
+        return h + y
+
+
+class ScoreNet(nn.Module):
+    def __init__(
+        self,
+        input_dim: int = 2,
+        hidden_dim: int = 128,
+        time_embed_dim: int = 64,
+        num_res_blocks: int = 3,
+        dropout: float = 0.0,
+    ):
+        super().__init__()
+
         self.time_emb = SinusoidalTimeEmbedding(time_embed_dim)
-        self.net = nn.Sequential(
-            nn.Linear(input_dim + time_embed_dim, hidden_dim),
-            nn.SiLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.SiLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.SiLU(),
-            nn.Linear(hidden_dim, input_dim),
+
+        self.input_proj = nn.Linear(input_dim, hidden_dim)
+        self.blocks = nn.ModuleList(
+            [ResidualMLPBlock(hidden_dim, time_embed_dim, dropout=dropout) for _ in range(num_res_blocks)]
         )
+        self.final_norm = nn.LayerNorm(hidden_dim)
+        self.final_act = nn.SiLU()
+        self.output_proj = nn.Linear(hidden_dim, input_dim)
+
         # Initialize last layer to near-zero to stabilize early training
-        nn.init.zeros_(self.net[-1].weight)
-        nn.init.zeros_(self.net[-1].bias)
+        nn.init.zeros_(self.output_proj.weight)
+        nn.init.zeros_(self.output_proj.bias)
 
     def forward(self, x: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
         t_emb = self.time_emb(t)
-        h = torch.cat([x, t_emb], dim=-1)
-        return self.net(h)
+        h = self.input_proj(x)
+        for block in self.blocks:
+            h = block(h, t_emb)
+        h = self.final_act(self.final_norm(h))
+        return self.output_proj(h)
