@@ -69,8 +69,18 @@ def train_baseline(
             x_in = scheduler.scale_model_input(xt, t_int)
             eps_pred = net(x_in, t_norm)
 
-            # Epsilon objective (no extra weighting)
-            loss = F.mse_loss(eps_pred, eps)
+            # Epsilon objective with SNR-based weighting
+            # Compute per-sample signal-to-noise ratio for the chosen timesteps
+            # SNR(t) = alpha_bar(t) / (1 - alpha_bar(t))
+            alpha_bar = scheduler.alphas_cumprod[t_int].to(x0)
+            snr = alpha_bar / (1.0 - alpha_bar + 1e-8)
+            # Weighting that balances high/low SNR timesteps
+            # See: common practice in diffusion training to stabilize and emphasize harder steps
+            weights = 1.0 / (snr + 1.0)  # shape: (b,)
+
+            # Per-sample MSE on epsilon prediction, then apply weights
+            mse_per_example = F.mse_loss(eps_pred, eps, reduction="none").mean(dim=1)
+            loss = (weights * mse_per_example).mean()
 
             opt.zero_grad(set_to_none=True)
             loss.backward()
