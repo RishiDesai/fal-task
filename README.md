@@ -1,19 +1,16 @@
 # fal-task
 
-## Two Moons diffusion baseline
+## Diffusion Models for Two Moons Distribution
 
 A minimal test bed for diffusion models on 2D data. Trains a score network on the "Two Moons" dataset and samples using a discrete DDPM scheduler.
 
-### Final plot
-
 ![Two Moons (target vs generated)](artifacts/plots/two_moons_final.png)
 
-### Installation (uv)
+### Setup
 
 ```bash
 uv venv
 source .venv/bin/activate
-
 uv pip install -r requirements.txt
 ```
 
@@ -26,7 +23,7 @@ python main.py --run --train-steps 40000 --batch-size 512 --lr 1e-3 --log-every 
 
 ### Parameters
 
-- `--train-steps` (int, default: 5000): Number of training optimization steps.
+- `--train-steps` (int, default: 40000): Number of training optimization steps.
 - `--batch-size` (int, default: 512): Batch size for training.
 - `--lr` (float, default: 1e-3): AdamW learning rate.
 - `--log-every` (int, default: 250): Progress logging frequency (steps).
@@ -40,7 +37,7 @@ python main.py --run --train-steps 40000 --batch-size 512 --lr 1e-3 --log-every 
 - `--run` (flag): Execute the end-to-end pipeline.
 
 ### Outputs
-
+ 
 - Checkpoint: `artifacts/checkpoints/baseline.pt`
 - Samples (tensor): `artifacts/outputs/samples.pt`
 - Plots:
