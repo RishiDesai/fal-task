@@ -101,22 +101,36 @@ def compute_c2st_auc(
     real: torch.Tensor,
     test_size: float = 0.3,
     seed: int = 42,
+    classifier: str = "rbf_svm",
+    n_splits: int = 5,
+    n_repeats: int = 3,
 ):
     """
-    Classifier Two-Sample Test (C2ST) using logistic regression.
+    Classifier Two-Sample Test (C2ST).
 
-    Trains a classifier to distinguish real (label=1) vs generated (label=0) samples
-    and reports ROC-AUC and accuracy on a held-out test split.
+    Defaults to a non-linear classifier (RBF-SVM) and evaluates with
+    Repeated Stratified K-Fold cross-validation, which is more reliable
+    for nonlinearly separable distributions like two moons.
+
+    Args:
+        gen: Generated samples, shape (N, D)
+        real: Real samples, shape (M, D)
+        test_size: Kept for backward compatibility (unused when CV is used)
+        seed: RNG seed
+        classifier: "rbf_svm" (default) or "logreg"
+        n_splits: Number of CV folds
+        n_repeats: Number of CV repeats
 
     Returns:
-        (roc_auc: float, accuracy: float)
+        (roc_auc_mean: float, acc_mean: float)
     """
     try:
         import numpy as np
-        from sklearn.model_selection import train_test_split
+        from sklearn.model_selection import RepeatedStratifiedKFold
         from sklearn.pipeline import make_pipeline
         from sklearn.preprocessing import StandardScaler
         from sklearn.linear_model import LogisticRegression
+        from sklearn.svm import SVC
         from sklearn.metrics import roc_auc_score, accuracy_score
     except Exception as exc:
         raise RuntimeError(
@@ -141,14 +155,38 @@ def compute_c2st_auc(
     X = np.concatenate([real_np, gen_np], axis=0)
     y = np.concatenate([np.ones(n, dtype=int), np.zeros(n, dtype=int)], axis=0)
 
-    X_tr, X_te, y_tr, y_te = train_test_split(
-        X, y, test_size=test_size, stratify=y, random_state=seed
-    )
+    # Classifier factory
+    if classifier == "rbf_svm":
+        clf = make_pipeline(
+            StandardScaler(),
+            SVC(kernel="rbf", gamma="scale", C=1.0, probability=True, random_state=seed),
+        )
+    elif classifier == "logreg":
+        clf = make_pipeline(
+            StandardScaler(),
+            LogisticRegression(max_iter=2000, random_state=seed),
+        )
+    else:
+        raise ValueError(f"Unknown classifier '{classifier}'")
 
-    clf = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000))
-    clf.fit(X_tr, y_tr)
-    prob = clf.predict_proba(X_te)[:, 1]
+    cv = RepeatedStratifiedKFold(n_splits=n_splits, n_repeats=n_repeats, random_state=seed)
 
-    auc = roc_auc_score(y_te, prob)
-    acc = accuracy_score(y_te, (prob >= 0.5).astype(int))
-    return float(auc), float(acc)
+    aucs: list[float] = []
+    accs: list[float] = []
+    for tr_idx, te_idx in cv.split(X, y):
+        X_tr, X_te = X[tr_idx], X[te_idx]
+        y_tr, y_te = y[tr_idx], y[te_idx]
+        clf.fit(X_tr, y_tr)
+
+        # Prefer probabilities; fall back to decision scores for AUC if needed
+        if hasattr(clf[-1], "predict_proba"):
+            prob = clf.predict_proba(X_te)[:, 1]
+            aucs.append(roc_auc_score(y_te, prob))
+        else:
+            score = clf.decision_function(X_te)
+            aucs.append(roc_auc_score(y_te, score))
+
+        pred = clf.predict(X_te)
+        accs.append(accuracy_score(y_te, pred))
+
+    return float(np.mean(aucs)), float(np.mean(accs))
