@@ -56,7 +56,8 @@ def plot_generated_only(gen: np.ndarray, save_path: str, title: str = "Generated
     plt.close(fig)
 
 
-def make_two_moons(n_samples: int = 10000, noise: float = 0.05, seed: Optional[int] = 42) -> Tuple[np.ndarray, np.ndarray]:
+def make_two_moons(n_samples: int = 10000, noise: float = 0.05, seed: Optional[int] = 42) -> Tuple[
+    np.ndarray, np.ndarray]:
     X, y = make_moons(n_samples=n_samples, noise=noise, random_state=seed)
     # Standardize to roughly unit variance and zero mean for stable training
     X = X.astype(np.float32)

@@ -1,11 +1,12 @@
-import torch
 import numpy as np
+import torch
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score, accuracy_score
 from sklearn.model_selection import RepeatedStratifiedKFold
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
-from sklearn.metrics import roc_auc_score, accuracy_score
+
 
 def _rbf_kernel(x: torch.Tensor, y: torch.Tensor, gamma: float) -> torch.Tensor:
     # x: (n, d), y: (m, d)
@@ -66,9 +67,9 @@ def compute_energy_distance(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 
 
 def compute_sliced_wasserstein(
-    x: torch.Tensor,
-    y: torch.Tensor,
-    num_projections: int = 256,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        num_projections: int = 256,
 ) -> torch.Tensor:
     """Sliced Wasserstein-1 distance via random projections.
 
@@ -101,13 +102,13 @@ def compute_sliced_wasserstein(
 
 
 def compute_c2st_auc(
-    gen: torch.Tensor,
-    real: torch.Tensor,
-    test_size: float = 0.3,
-    seed: int = 42,
-    classifier: str = "rbf_svm",
-    n_splits: int = 5,
-    n_repeats: int = 3,
+        gen: torch.Tensor,
+        real: torch.Tensor,
+        test_size: float = 0.3,
+        seed: int = 42,
+        classifier: str = "rbf_svm",
+        n_splits: int = 5,
+        n_repeats: int = 3,
 ):
     """
     Classifier Two-Sample Test (C2ST).

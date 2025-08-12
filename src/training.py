@@ -1,26 +1,25 @@
-
 import torch
+import torch.nn.functional as F
+from diffusers import DDPMScheduler
+from diffusers.training_utils import EMAModel
 from torch.optim import AdamW
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
-from diffusers import DDPMScheduler
-from diffusers.training_utils import EMAModel
-import torch.nn.functional as F
 
 from .networks import ScoreNet
 from .utils import make_two_moons
 
 
 def train_baseline(
-    ckpt_path: str,
-    num_steps: int = 5000,
-    batch_size: int = 512,
-    lr: float = 1e-3,
-    device: torch.device = torch.device("cpu"),
-    log_every: int = 250,
-    grad_clip: float = 1.0,
-    ema_decay: float = 0.999,
-    use_ema: bool = False,
+        ckpt_path: str,
+        num_steps: int = 5000,
+        batch_size: int = 512,
+        lr: float = 1e-3,
+        device: torch.device = torch.device("cpu"),
+        log_every: int = 250,
+        grad_clip: float = 1.0,
+        ema_decay: float = 0.999,
+        use_ema: bool = False,
 ):
     X, _ = make_two_moons(n_samples=50000)
     X = torch.tensor(X, dtype=torch.float32)

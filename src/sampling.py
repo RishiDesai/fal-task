@@ -4,10 +4,10 @@ from diffusers import DDPMScheduler
 
 @torch.no_grad()
 def sample_with_euler(
-    model: torch.nn.Module,
-    num_samples: int = 5000,
-    num_steps: int = 1000,
-    device: torch.device = torch.device("cpu"),
+        model: torch.nn.Module,
+        num_samples: int = 5000,
+        num_steps: int = 1000,
+        device: torch.device = torch.device("cpu"),
 ):
     """Sampling with DDPM scheduler to match training (epsilon prediction).
 

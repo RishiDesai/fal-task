@@ -1,20 +1,18 @@
 import argparse
-import os
 from pathlib import Path
 
 import torch
 
-from src.training import train_baseline
-from src.sampling import sample_with_euler
 from src.metrics import (
     compute_mmd_rbf,
     compute_energy_distance,
     compute_sliced_wasserstein,
     compute_c2st_auc,
 )
-from src.utils import set_seed, to_device, plot_generated_vs_target, plot_generated_only, make_two_moons
 from src.networks import ScoreNet
-
+from src.sampling import sample_with_euler
+from src.training import train_baseline
+from src.utils import set_seed, to_device, plot_generated_vs_target, plot_generated_only, make_two_moons
 
 ARTIFACTS_DIR = Path("artifacts")
 CKPT_DIR = ARTIFACTS_DIR / "checkpoints"
@@ -117,11 +115,10 @@ def main():
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--log-every", type=int, default=250)
     parser.add_argument("--sample-steps", type=int, default=1000)
-    # EMA controls
     parser.add_argument("--train-use-ema", action="store_true", help="Track EMA during training and save EMA weights")
     parser.add_argument("--sample-use-ema", action="store_true", help="Use EMA weights for sampling if available")
     parser.add_argument("--ema-decay", type=float, default=0.999, help="EMA decay for training updates")
-    parser.add_argument("--skip-train", action="store_true", help="Skip training and only sample/evaluate using existing checkpoint")
+    parser.add_argument("--skip-train", action="store_true",help="Skip training and only sample/evaluate checkpoint")
     parser.add_argument("--num-samples", type=int, default=5000)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--run", action="store_true", help="Run train->sample->eval->plot pipeline")
