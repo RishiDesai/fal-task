@@ -94,3 +94,61 @@ def compute_sliced_wasserstein(
             sw_total += (xi_q - yi_q).abs().mean()
 
     return sw_total / num_projections
+
+
+def compute_c2st_auc(
+    gen: torch.Tensor,
+    real: torch.Tensor,
+    test_size: float = 0.3,
+    seed: int = 42,
+):
+    """
+    Classifier Two-Sample Test (C2ST) using logistic regression.
+
+    Trains a classifier to distinguish real (label=1) vs generated (label=0) samples
+    and reports ROC-AUC and accuracy on a held-out test split.
+
+    Returns:
+        (roc_auc: float, accuracy: float)
+    """
+    try:
+        import numpy as np
+        from sklearn.model_selection import train_test_split
+        from sklearn.pipeline import make_pipeline
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.metrics import roc_auc_score, accuracy_score
+    except Exception as exc:
+        raise RuntimeError(
+            "C2ST requires scikit-learn and numpy. Please install requirements.txt."
+        ) from exc
+
+    # Ensure CPU numpy arrays for sklearn
+    real_np = real.detach().cpu().numpy()
+    gen_np = gen.detach().cpu().numpy()
+
+    # Balance classes by subsampling to the smaller size
+    n = min(len(real_np), len(gen_np))
+    if len(real_np) != n:
+        rng = np.random.default_rng(seed)
+        idx = rng.choice(len(real_np), size=n, replace=False)
+        real_np = real_np[idx]
+    if len(gen_np) != n:
+        rng = np.random.default_rng(seed + 1)
+        idx = rng.choice(len(gen_np), size=n, replace=False)
+        gen_np = gen_np[idx]
+
+    X = np.concatenate([real_np, gen_np], axis=0)
+    y = np.concatenate([np.ones(n, dtype=int), np.zeros(n, dtype=int)], axis=0)
+
+    X_tr, X_te, y_tr, y_te = train_test_split(
+        X, y, test_size=test_size, stratify=y, random_state=seed
+    )
+
+    clf = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000))
+    clf.fit(X_tr, y_tr)
+    prob = clf.predict_proba(X_te)[:, 1]
+
+    auc = roc_auc_score(y_te, prob)
+    acc = accuracy_score(y_te, (prob >= 0.5).astype(int))
+    return float(auc), float(acc)

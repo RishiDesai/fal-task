@@ -10,6 +10,7 @@ from twomoons_baseline.metrics import (
     compute_mmd_rbf,
     compute_energy_distance,
     compute_sliced_wasserstein,
+    compute_c2st_auc,
 )
 from twomoons_baseline.data import make_two_moons
 from twomoons_baseline.viz import plot_generated_vs_target, plot_generated_only
@@ -94,9 +95,11 @@ def run_baseline(args):
     mmd = compute_mmd_rbf(samples, target)
     ed = compute_energy_distance(samples, target)
     sw = compute_sliced_wasserstein(samples, target)
+    auc, acc = compute_c2st_auc(samples, target)
     print(f"MMD (RBF median heuristic): {mmd.item():.6f}")
     print(f"Energy Distance: {ed.item():.6f}")
     print(f"Sliced Wasserstein-1 (L=256): {sw.item():.6f}")
+    print(f"C2ST (logreg) ROC-AUC: {auc:.4f}  Acc: {acc:.4f}  (0.5/0.5 is ideal)")
 
     # Plot
     fig_path = PLOTS_DIR / "baseline_two_moons.png"
