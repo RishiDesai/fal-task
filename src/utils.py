@@ -9,9 +9,6 @@ from sklearn.datasets import make_moons
 
 
 def to_device() -> torch.device:
-    # Prefer MPS on Apple Silicon if available, else CUDA, else CPU
-    if torch.backends.mps.is_available():
-        return torch.device("mps")
     if torch.cuda.is_available():
         return torch.device("cuda")
     return torch.device("cpu")
